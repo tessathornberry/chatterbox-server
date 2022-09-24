@@ -1,3 +1,68 @@
+/********* headers ************/
+var defaultCorsHeaders = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'access-control-allow-headers': 'content-type, accept, authorization',
+  'access-control-max-age': 10 // Seconds.
+};
+/********* posted messages ************/
+let messages = [];
+
+let message_id = 0;
+
+/********* ACTUAL REQUEST HANDLER FUNCTION WE ARE WORKING IN ************/
+var requestHandler = function(request, response) {
+  var statusCode;
+  var headers = defaultCorsHeaders;
+
+  /********* our helper function ************/
+  const addMessage = (message) => {
+    messages.unshift(message);
+    message_id++;
+  };
+
+  /********* console message describing activity ************/
+  console.log('Serving request type ' + request.method + ' for url ' + request.url);
+  const { method, url } = request;
+
+  // Tell the client we are sending them JSON.
+  headers['Content-Type'] = 'application/json';
+
+  /********* our conditional statements ************/
+  if (method === 'OPTIONS') {
+    statusCode = 200;
+    response.writeHead(statusCode, headers);
+    response.end(headers['access-control-allow-methods']);
+
+    // response.end(JSON.stringify(headers['access-control-allow-methods']));
+  } else if (method === 'GET' && url === '/classes/messages') {
+    //might need to iterate messages to find the correct message?
+    statusCode = 200;
+    response.writeHead(statusCode, headers);
+    response.end(JSON.stringify(messages)); //should this be all messages or just the added one?
+  } else if (method === 'POST' && url === '/classes/messages') {
+    statusCode = 201; //I added this based on the test
+    let body = [];
+    request.on('data', (chunk) => {
+      body.push(chunk);
+    }).on('end', () => {
+      body = Buffer.concat(body).toString();
+      body = JSON.parse(body); //added this to parse the string we got back
+      body.message_id = message_id;
+      body.createdAt = new Date();
+      addMessage(body);
+      response.writeHead(statusCode, headers);
+      response.end(JSON.stringify(messages));
+    });
+  } else {
+    statusCode = 404;
+    response.writeHead(statusCode, headers);
+    response.end('sorry that endpoint does not exist');
+  }
+};
+
+module.exports.requestHandler = requestHandler;
+
 /*************************************************************
 
 You should implement your request handler function in this file.
@@ -22,102 +87,32 @@ this file and include it in basic-server.js so that it actually works.
 // Another way to get around this restriction is to serve you chat
 // client from this domain by setting up static file serving.
 
-var defaultCorsHeaders = {
-  'access-control-allow-origin': '*',
-  'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'access-control-allow-headers': 'content-type, accept, authorization',
-  'access-control-max-age': 10 // Seconds.
-};
+// console.log('request', request);
 
-const messages = [
-  {username: 'Tessa', message: '6/11'}
-];
+// Request and Response come from node's http module.
+//
+// They include information about both the incoming request, such as
+// headers and URL, and about the outgoing response, such as its status
+// and content.
+//
+// Documentation for both request and response can be found in the HTTP section at
+// http://nodejs.org/documentation/api/
 
-var requestHandler = function(request, response) {
+// Do some basic logging.
+//
+// Adding more logging to your server can be an easy way to get passive
+// debugging help, but you should always be careful about leaving stray
+// console.logs in your code.
 
-  // console.log('request', request);
+// .writeHead() writes to the request line and headers of the response,
+// which includes the status and all headers.
+// response.writeHead(statusCode, headers);
 
-  // Request and Response come from node's http module.
-  //
-  // They include information about both the incoming request, such as
-  // headers and URL, and about the outgoing response, such as its status
-  // and content.
-  //
-  // Documentation for both request and response can be found in the HTTP section at
-  // http://nodejs.org/documentation/api/
-
-  // Do some basic logging.
-  //
-  // Adding more logging to your server can be an easy way to get passive
-  // debugging help, but you should always be careful about leaving stray
-  // console.logs in your code.
-
-  const addMessage = (message) => {
-    messages.push(message);
-  };
-
-
-
-
-  console.log('Serving request type ' + request.method + ' for url ' + request.url);
-  const { method, url } = request;
-  console.log(url);
-  // The outgoing status.
-  var statusCode = 200;
-
-  // See the note below about CORS headers.
-
-  var headers = defaultCorsHeaders;
-
-  // Tell the client we are sending them plain text.
-  //
-  // You will need to change this if you are sending something
-  // other than plain text, like JSON or HTML.
-  headers['Content-Type'] = 'application/json';
-
-  if (method === 'GET' && url === '/classes/messages') {
-    response.writeHead(statusCode, headers);
-    response.end(JSON.stringify(messages)); //objects do not seem to work here
-  } else if (method === 'POST' && url === '/classes/messages') {
-    // var message = {};
-    // message.username = username;
-    // message.text = text;
-    // message.roomname = roomname;
-    console.log('success!');
-    let body = [];
-    request.on('data', (chunk) => {
-      body.push(chunk);
-      console.log('chunk', chunk);
-    }).on('end', () => {
-      body = Buffer.concat(body).toString();
-      response.end(body);
-    });
-
-    response.writeHead(statusCode, headers);
-    response.end(JSON.stringify({hereweare: 'tryin'})); //objects do not seem to work here
-
-    // addMessage('hi').then(response.writeHead(statusCode, headers)).done(response.end(JSON.stringify(messages)));
-    // async addMessage() {
-    //   messages.push(message);
-    // }
-    // await () => {
-    //   response.writeHead(statusCode, headers);
-    //   response.end(JSON.stringify(messages));
-
-  }
-
-  // .writeHead() writes to the request line and headers of the response,
-  // which includes the status and all headers.
-  // response.writeHead(statusCode, headers);
-
-  // Make sure to always call response.end() - Node may not send
-  // anything back to the client until you do. The string you pass to
-  // response.end() will be the body of the response - i.e. what shows
-  // up in the browser.
-  //
-  // Calling .end "flushes" the response's internal buffer, forcing
-  // node to actually send all the data over to the client.
-  // response.end('Hello, World!'); //already tried commenting this out
-};
-
-module.exports = requestHandler;
+// Make sure to always call response.end() - Node may not send
+// anything back to the client until you do. The string you pass to
+// response.end() will be the body of the response - i.e. what shows
+// up in the browser.
+//
+// Calling .end "flushes" the response's internal buffer, forcing
+// node to actually send all the data over to the client.
+// response.end('Hello, World!'); //already tried commenting this out

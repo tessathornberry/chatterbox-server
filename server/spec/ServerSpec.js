@@ -91,4 +91,18 @@ describe('Node Server Request Listener Function', function() {
     expect(res._ended).to.equal(true);
   });
 
+  // it('Should return message posted when POST is successful', function() {
+  //   var stubMsg = {
+  //     username: 'Jono',
+  //     text: 'Do my bidding!'
+  //   };
+  //   var req = new stubs.request('/classes/messages', 'POST', stubMsg);
+  //   var res = new stubs.response();
+
+  //   handler.requestHandler(req, res);
+
+  //   expect(res._data).to.equal(stubMsg);
+  //   expect(res._ended).to.equal(true);
+  // });
+
 });
